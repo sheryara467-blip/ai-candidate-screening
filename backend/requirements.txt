@@ -30,7 +30,7 @@ scikit-learn==1.5.0
 # Text-to-speech for interview questions
 gTTS==2.5.1
 # Whisper speech-to-text for voice answers
-openai-whisper==20231117
+# openai-whisper==20231117
 # Audio processing
 pydub==0.25.1
 # scipy for additional similarity metrics
@@ -38,3 +38,5 @@ scipy==1.13.0
 
 
 psycopg2-binary==2.9.9
+
+faster-whisper
