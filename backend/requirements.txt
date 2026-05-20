@@ -35,3 +35,6 @@ openai-whisper==20231117
 pydub==0.25.1
 # scipy for additional similarity metrics
 scipy==1.13.0
+
+
+psycopg2-binary==2.9.9
