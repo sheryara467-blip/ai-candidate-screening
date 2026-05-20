@@ -50,11 +50,41 @@ app = FastAPI(
 # ============================================================
 # CORS Configuration
 # ============================================================
-allowed_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")
+
+# OLD CODE (kept for reference)
+# allowed_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")
+
+# ============================================================
+# UPDATED CORS CONFIGURATION
+# ============================================================
+# FIX:
+# Your frontend is deployed on Vercel and backend on Render.
+# Browser blocked requests because frontend domain was not
+# included properly in Access-Control-Allow-Origin.
+#
+# This new config:
+# - keeps localhost support
+# - supports multiple deployed frontend URLs
+# - safely strips spaces
+# ============================================================
+
+allowed_origins = [
+    origin.strip()
+    for origin in os.getenv(
+        "CORS_ORIGINS",
+        (
+            "http://localhost:3000,"
+            "https://ai-candidate-screening-three.vercel.app,"
+            "https://ai-candidate-screening-673im1rjw-sheryara467-blips-projects.vercel.app"
+        )
+    ).split(",")
+]
+
+logger.info(f"CORS Allowed Origins: {allowed_origins}")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[o.strip() for o in allowed_origins],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
