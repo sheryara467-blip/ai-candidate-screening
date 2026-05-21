@@ -61,13 +61,14 @@ class PineconeService:
         self.api_key = os.getenv("PINECONE_API_KEY")
         self.environment = os.getenv("PINECONE_ENVIRONMENT", "us-east-1")
         self.index_name = os.getenv("PINECONE_INDEX_NAME", "job-embeddings")
+
         self.embedding_model_name = os.getenv(
             "EMBEDDING_MODEL",
             "all-MiniLM-L6-v2"
         )
 
         # ====================================================
-        # Initialize Pinecone client
+        # Initialize Pinecone client only — lightweight
         # ====================================================
         self.pc = Pinecone(api_key=self.api_key)
 
@@ -93,7 +94,7 @@ class PineconeService:
         # Model is initialized ONLY when first needed.
         # This dramatically reduces startup RAM usage.
         # ====================================================
-        self.embedding_model = None
+        self._embedding_model = None
 
         # ====================================================
         # Connect to (or create) Pinecone index
@@ -117,17 +118,17 @@ class PineconeService:
     #
     # BENEFITS:
     # ------------------------------------------------------------
-    # ✅ Lower startup memory
-    # ✅ Successful Render deployment
-    # ✅ Same functionality
-    # ✅ Same embedding quality
+    #  Lower startup memory
+    #  Successful Render deployment
+    #  Same functionality
+    #  Same embedding quality
     # ============================================================
-    def get_embedding_model(self):
+    def _get_embedding_model(self):
 
         # ====================================================
         # Load model only once
         # ====================================================
-        if self.embedding_model is None:
+        if self._embedding_model is None:
 
             logger.info(
                 f"Lazy-loading embedding model: "
@@ -145,11 +146,13 @@ class PineconeService:
             # =================================================
             # Initialize embedding model
             # =================================================
-            self.embedding_model = SentenceTransformer(
+            self._embedding_model = SentenceTransformer(
                 self.embedding_model_name
             )
 
-        return self.embedding_model
+            logger.info("Embedding model loaded successfully")
+
+        return self._embedding_model
 
     # ============================================================
     # Create Pinecone index if it doesn't already exist
@@ -221,7 +224,7 @@ class PineconeService:
         # ----------------------------------------------------
         # Ensure model is lazy-loaded only when needed.
         # ====================================================
-        model = self.get_embedding_model()
+        model = self._get_embedding_model()
 
         # ====================================================
         # Encode text and normalize embeddings
@@ -300,7 +303,7 @@ class PineconeService:
         embedding = self.generate_embedding(text)
 
         # ====================================================
-        # Build upsert payload
+        # Build the upsert payload
         # ====================================================
         vector = {
             "id": vector_id,
@@ -309,7 +312,7 @@ class PineconeService:
         }
 
         # ====================================================
-        # Upsert into Pinecone
+        # Upsert into Pinecone index
         # ====================================================
         self.index.upsert(vectors=[vector])
 
@@ -320,7 +323,7 @@ class PineconeService:
         return vector_id
 
     # ============================================================
-    # Update existing vector with new text
+    # Update an existing vector with new text
     #
     # Used for incremental sync after job updates
     # ============================================================
@@ -391,12 +394,12 @@ class PineconeService:
     ) -> list:
 
         # ====================================================
-        # Generate embedding for query
+        # Generate query embedding
         # ====================================================
         query_embedding = self.generate_embedding(text)
 
         # ====================================================
-        # Run similarity search
+        # Run similarity query
         # ====================================================
         results = self.index.query(
             vector=query_embedding,
@@ -408,7 +411,7 @@ class PineconeService:
         return results.get("matches", [])
 
     # ============================================================
-    # Get Pinecone index statistics
+    # Get index statistics
     # ============================================================
     def get_index_stats(self) -> dict:
         return self.index.describe_index_stats()
